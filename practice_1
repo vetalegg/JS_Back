@@ -1,0 +1,80 @@
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+ 
+const app = express();
+ 
+app.use(cors());
+app.use(express.urlencoded({
+    extended: true
+}));
+app.use(express.json());
+app.use(express.text());
+ 
+app.use((req, res, next) => {
+    console.log('URL = ', req.url);
+    console.log('Original_URL = ', req.originalUrl);
+    console.log('METHOD = ', req.method);
+    console.log('HOST = ', req.headers.host);
+    console.log('IsSecure = ', req.secure);
+    console.log('BODY', req.body);
+    console.log('QUERY', req.query);
+ 
+    next();
+});
+ 
+app.all('/reverseCase', (req, res, next) => {
+    let text = req.query.text || req.body;
+    if(text && typeof text === 'string'){
+        text = text.split('');
+        text = text.map(symbol => {
+            const upper = symbol.toUpperCase();
+            if (upper === symbol) {
+                return symbol.toLowerCase();
+            } else return upper;
+        });
+        res.json({error: false, result: text.join('')});
+    } else next({message: 'Invalid text'});
+});
+ 
+app.all('/reverseArray', (req, res, next) => {  
+    let data;
+    if(req.query.array){
+        try {
+            data = JSON.parse(req.query.array);
+        } catch (e){
+            next({message: 'Invalid array'});
+            return false;
+        }
+    } else data = req.body;
+    
+    if (data && Array.isArray(data)) {
+        res.json({error: false, result: data.reverse()});
+    } else next({message: 'Invalid array'});
+});
+ 
+app.all('/sum', (req, res, next) => {   
+    let {a, b} = req.query.a && req.query.b ? req.query : (req.body.a && req.body.b ? req.body : {});
+ 
+    if (a && b) {
+        a = parseInt(a);
+        b = parseInt(b);
+        res.json({error: false, result: a + b});
+    } else next({message: 'Invalid input data'});
+});
+ 
+app.all('/test', (req, res) => {
+    res.status(200).json({
+        message: 'KKKKKK'
+    });
+})
+ 
+app.use((err, req, res, next) => {
+    err.error = true;
+    res.json(err);
+});
+ 
+http.createServer(app).listen(3000, () => {
+    console.log('Server is working on port 3000');
+})
+
